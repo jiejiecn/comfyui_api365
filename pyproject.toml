@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "api365-comfyui"
+version = "1.0.0"
+description = "API365 ComfyUI自定义节点包"
+authors = [
+    {name = "API365", email = "contact@api365.com"}
+]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.25.0",
+    "Pillow>=8.0.0",
+    "numpy>=1.21.0",
+    "torch>=1.9.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/api365/comfyui-nodes"
+Repository = "https://github.com/api365/comfyui-nodes"
