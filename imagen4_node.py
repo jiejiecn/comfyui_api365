@@ -5,7 +5,7 @@ Imagen4 节点实现
 import requests
 import ujson as json
 import random
-from image_utils import decode_image, calculate_dimensions, create_default_image
+from .image_utils import decode_image, calculate_dimensions, create_default_image
 
 
 class Imagen4Node:

@@ -4,7 +4,7 @@ GPTImage 节点实现
 
 import requests
 import ujson as json
-from image_utils import decode_image, create_default_image 
+from .image_utils import decode_image, create_default_image 
 
 
 class GPTImageNode:

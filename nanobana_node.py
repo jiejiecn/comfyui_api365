@@ -7,7 +7,7 @@ import ujson as json
 import base64
 import time, os, random, re
 from io import BytesIO
-from image_utils import pil2tensor, tensor2pil, decode_image, calculate_dimensions, create_default_image
+from .image_utils import pil2tensor, tensor2pil, decode_image, calculate_dimensions, create_default_image
 
 
 
