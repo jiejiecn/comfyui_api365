@@ -3,52 +3,12 @@ Nano Banana 节点实现
 """
 
 import requests
-import json
+import ujson as json
 import base64
 import time, os, random, re
 from io import BytesIO
-from PIL import Image
-import numpy as np
-import torch
+from image_utils import pil2tensor, tensor2pil, decode_image, calculate_dimensions, create_default_image
 
-
-# 获取当前目录
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(CURRENT_DIR, 'api365_config.json')
-
-def get_config():
-    """获取配置文件"""
-    try:
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                config = json.load(f)
-            return config
-        return {}
-    except Exception as e:
-        print(f"读取配置文件失败: {e}")
-        return {}
-
-def save_config(config):
-    """保存配置文件 - 已禁用"""
-    pass
-
-
-def pil2tensor(image: Image.Image) -> torch.Tensor:
-    """将PIL图像转换为ComfyUI tensor格式 [1, H, W, 3]"""
-    if image.mode != 'RGB':
-        image = image.convert('RGB')
-    np_image = np.array(image).astype(np.float32) / 255.0
-    tensor = torch.from_numpy(np_image)
-    tensor = tensor.unsqueeze(0)
-    return tensor
-
-def tensor2pil(tensor: torch.Tensor) -> list:
-    """将ComfyUI tensor转换为PIL图像列表"""
-    if len(tensor.shape) == 4:
-        return [Image.fromarray((t.cpu().numpy() * 255).astype(np.uint8)) for t in tensor]
-    else:
-        np_image = (tensor.cpu().numpy() * 255).astype(np.uint8)
-        return [Image.fromarray(np_image)]
 
 
 class NanoBanana2Node:
@@ -71,7 +31,7 @@ class NanoBanana2Node:
                     "default": "1:1"
                 }),
                 "api_key": ("STRING", {
-                    "default": "",
+                    "default": "tk-xxxxxx",
                     "multiline": False
                 }),
             },
@@ -234,73 +194,8 @@ class NanoBanana2Node:
             
         except Exception as e:
             print(f"响应解析错误: {str(e)}")
-            print(f"响应内容: {json.dumps(response_json, indent=2, ensure_ascii=False)[:500]}")
+            print(f"响应内容: {json.dumps(response_json)[:500]}")
             raise Exception(f"响应解析失败: {str(e)}")
-
-
-    def decode_image(self, image_url):
-        """下载或解码图片"""
-        try:
-            if image_url.startswith('data:image/'):
-                # Base64图片
-                base64_data = image_url.split(',', 1)[1]
-                image_data = base64.b64decode(base64_data)
-                pil_image = Image.open(BytesIO(image_data))
-            else:
-                # HTTP URL图片 - 使用独立session避免代理连接复用问题
-                session = requests.Session()
-                session.trust_env = True
-                try:
-                    response = session.get(image_url, timeout=60)
-                    response.raise_for_status()
-                    pil_image = Image.open(BytesIO(response.content))
-                finally:
-                    session.close()
-            
-            # 转换为RGB模式
-            if pil_image.mode != 'RGB':
-                pil_image = pil_image.convert('RGB')
-            
-            print(f"图片解码成功: {pil_image.size}")
-            return pil2tensor(pil_image)
-            
-        except Exception as e:
-            print(f"图片解码失败: {str(e)}")
-            raise
-    
-    def calculate_dimensions(self, aspect_ratio, image_size):
-        """计算图像尺寸"""
-        # 宽高比映射
-        ratio_map = {
-            "1:1": (1, 1), "2:3": (2, 3), "3:2": (3, 2),
-            "3:4": (3, 4), "4:3": (4, 3), "4:5": (4, 5),
-            "5:4": (5, 4), "9:16": (9, 16), "16:9": (16, 9),
-            "21:9": (21, 9)
-        }
-        
-        # 分辨率映射
-        size_map = {"1K": 1024, "2K": 2048, "4K": 4096}
-        
-        w_ratio, h_ratio = ratio_map.get(aspect_ratio, (1, 1))
-        base_size = size_map.get(image_size, 1024)
-        
-        # 计算实际尺寸
-        if w_ratio >= h_ratio:
-            width = base_size
-            height = int(base_size * h_ratio / w_ratio)
-        else:
-            height = base_size
-            width = int(base_size * w_ratio / h_ratio)
-            
-        return width, height
-
-    def create_default_image(self, aspect_ratio, image_size):
-        """创建默认占位图"""
-        width, height = self.calculate_dimensions(aspect_ratio, image_size)
-        
-        # 创建白色图片
-        img = Image.new('RGB', (width, height), color='white')
-        return pil2tensor(img)
 
     def generate(self, **kwargs):
         """处理输入并调用后端接口"""
@@ -338,7 +233,7 @@ class NanoBanana2Node:
             if response.status_code != 200:
                 error_msg = f"API请求失败: {response.status_code} - {response.text}"
                 print(f"Error: {error_msg}")
-                return (self.create_default_image(aspect_ratio, image_size), error_msg, "None")
+                return (create_default_image(None, aspect_ratio, image_size), error_msg, "None")
             
             # 解析响应
             resp_json = response.json()
@@ -346,16 +241,16 @@ class NanoBanana2Node:
             
             if result['success']:
                 # 解码第一张图片（如果有）
-                output_image = self.decode_image(result['images'][0])
-                return (output_image, result['text'] if result['text'] else "图片生成成功", resp_json)
+                output_image = decode_image(result['images'][0])
+                return (output_image, "图片生成成功", resp_json)
             else:
-                return (self.create_default_image(aspect_ratio, image_size), "API未返回图片", resp_json)
+                return (create_default_image(None, aspect_ratio, image_size), "API未返回图片", resp_json)
                 
                 
         except Exception as e:
             error_msg = f"处理过程中发生错误: {str(e)}"
             print(f"Error: {error_msg}")
-            return (self.create_default_image(aspect_ratio, image_size), error_msg, "None")
+            return (create_default_image(None, aspect_ratio, image_size), error_msg, "None")
         
         finally:
             if session:
