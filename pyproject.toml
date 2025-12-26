@@ -20,5 +20,5 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/api365/comfyui-nodes"
-Repository = "https://github.com/api365/comfyui-nodes"
+Homepage = "https://api365.cloud"
+Repository = "https://gitlab.wanshinet.cn/api365/comfyui"
