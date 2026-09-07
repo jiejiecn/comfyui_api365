@@ -21,8 +21,8 @@ class NanoBanana2Node:
                 
                 "user_prompt": ("STRING", {"forceInput": True}),
                 
-                "model": (["gemini-3-pro-image-preview", "gemini-2.5-flash-image"], {
-                    "default": "gemini-3-pro-image-preview"
+                "model": (["gemini-3.1-flash-image", "gemini-3-pro-image", "gemini-2.5-flash-image"], {
+                    "default": "gemini-3.1-flash-image"
                 }),
                 "size": (["1K", "2K", "4K"], {
                     "default": "1K"
