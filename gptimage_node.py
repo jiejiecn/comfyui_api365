@@ -16,7 +16,7 @@ class GPTImageNode:
             "required": {
                 "user_prompt": ("STRING", {"forceInput": True}),
 
-                "model": (["gpt-image-1.5"], {
+                "model": (["gpt-image-1.5", "gpt-image-2"], {
                     "default": "gpt-image-1.5"
                 }),
                 "size": (["1024x1024", "1536x1024", "1024x1536"], {
@@ -79,7 +79,7 @@ class GPTImageNode:
                 "Authorization": f"Bearer {api_key}"
             }
             
-            url = "https://openai.api365.cloud/v1/images/generations"
+            url = "https://gpt-image.api365.cloud/v1/images/generations"
             
             session = requests.Session()
             response = session.post(url, headers=headers, json=payload, timeout=180)
